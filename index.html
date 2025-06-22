@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wish, Budget & Action Tool</title>
+  <style>
+    :root {
+      --bg: #f6f8fa;
+      --primary: #3949ab;
+      --primary-light: #7986cb;
+      --accent: #ffb300;
+      --danger: #e53935;
+      --border: #e0e0e0;
+      --radius: 12px;
+    }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 1rem 0.5rem;
+      text-align: center;
+      border-bottom-left-radius: var(--radius);
+      border-bottom-right-radius: var(--radius);
+    }
+    main {
+      max-width: 900px;
+      margin: 1rem auto;
+      padding: 0 1rem 2rem 1rem;
+    }
+    h2 {
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+      font-size: 1.3rem;
+      color: var(--primary);
+    }
+    form {
+      background: #fff;
+      padding: 1rem;
+      border-radius: var(--radius);
+      box-shadow: 0 2px 6px #0001;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+    form > * {
+      min-width: 120px;
+      flex: 1 1 160px;
+    }
+    label {
+      font-weight: 500;
+      margin-bottom: 0.2em;
+      display: block;
+    }
+    input, select, button, textarea {
+      font-size: 1em;
+      padding: 0.5em;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    button.danger {
+      background: var(--danger);
+    }
+    button.secondary {
+      background: var(--primary-light);
+    }
+    button:active {
+      filter: brightness(0.95);
+    }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+    .budget-pools, .wishlist, .overview {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 6px #0001;
+    }
+    .budget-table, .wishlist-table, .overview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.97em;
+      margin-top: 1em;
+    }
+    .budget-table th, .budget-table td,
+    .wishlist-table th, .wishlist-table td,
+    .overview-table th, .overview-table td {
+      padding: 0.6em;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .wishlist-table th, .budget-table th, .overview-table th {
+      background: #f1f3fa;
+      color: var(--primary);
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2em 0.7em;
+      border-radius: 8px;
+      font-size: 0.9em;
+      margin-right: 0.2em;
+      margin-bottom: 0.1em;
+    }
+    .tag.need-Essential { background: #e3f2fd; color: #1967d2; }
+    .tag.need-Useful { background: #fffde7; color: #fbc02d; }
+    .tag.need-Nice { background: #f3e5f5; color: #8e24aa; }
+    .tag.priority-High   { background: #ffebee; color: #c62828; }
+    .tag.priority-Medium { background: #fffde7; color: #fbc02d; }
+    .tag.priority-Low    { background: #e8f5e9; color: #388e3c; }
+    .tag.category-Work { background: #e1f5fe; color: #0277bd; }
+    .tag.category-Home { background: #fff3e0; color: #ef6c00; }
+    .tag.category-Entertainment { background: #ede7f6; color: #5e35b1; }
+    /* Responsive styles */
+    @media (max-width: 650px) {
+      .budget-table th, .budget-table td,
+      .wishlist-table th, .wishlist-table td,
+      .overview-table th, .overview-table td {
+        font-size: 0.93em;
+        padding: 0.4em 0.3em;
+      }
+      form {
+        flex-direction: column;
+      }
+      .flex-row {
+        flex-direction: column;
+        gap: 0.1em;
+      }
+    }
+    .task-list {
+      margin: 0.3em 0 0.7em 0;
+      padding: 0;
+      list-style: none;
+      font-size: 0.96em;
+    }
+    .task-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.6em;
+      margin-bottom: 0.2em;
+    }
+    .task-complete {
+      text-decoration: line-through;
+      color: #888;
+    }
+    .unlocked {
+      color: var(--primary);
+      font-weight: bold;
+    }
+    .locked {
+      color: var(--danger);
+      font-weight: bold;
+    }
+    .affordable {
+      color: var(--primary);
+      font-weight: bold;
+    }
+    .unaffordable {
+      color: var(--danger);
+      font-weight: bold;
+    }
+    .small-btn {
+      font-size: 0.95em;
+      padding: 0.2em 0.7em;
+      margin-left: 0.2em;
+      margin-right: 0.2em;
+    }
+    .budget-bar-bg {
+      width: 100%;
+      background: #e3e6ee;
+      border-radius: 8px;
+      height: 14px;
+      overflow: hidden;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+    .budget-bar {
+      height: 100%;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--primary) 60%, var(--accent));
+    }
+    a {
+      color: var(--primary);
+      text-decoration: underline;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Wish, Budget & Action Tool</h1>
+    <div style="font-size:1.1em;">Your hybrid wishlist, budget manager, and task tracker</div>
+  </header>
+  <main>
+
+    <!-- Budget Pools Section -->
+    <section class="budget-pools">
+      <h2>Budget Pools</h2>
+      <form id="addBudgetPoolForm" autocomplete="off">
+        <div>
+          <label for="poolName">Pool Name</label>
+          <input type="text" id="poolName" required placeholder="e.g., Tech, Home">
+        </div>
+        <div>
+          <label for="poolAmount">Add Amount</label>
+          <input type="number" min="0" step="0.01" id="poolAmount" required placeholder="e.g., 100">
+        </div>
+        <button type="submit">Add / Update Pool</button>
+      </form>
+      <table class="budget-table" id="budgetPoolsTable">
+        <thead>
+          <tr>
+            <th>Pool</th>
+            <th>Allocated</th>
+            <th>Spent</th>
+            <th>Available</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Pools go here -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Wishlist Section -->
+    <section class="wishlist">
+      <h2>Wishlist Items</h2>
+      <form id="addWishlistItemForm" autocomplete="off">
+        <div>
+          <label for="itemName">Name</label>
+          <input type="text" id="itemName" required placeholder="e.g., 27'' 4K Monitor">
+        </div>
+        <div>
+          <label for="itemPrice">Price ($)</label>
+          <input type="number" min="0" step="0.01" id="itemPrice" required>
+        </div>
+        <div>
+          <label for="itemURL">Product URL</label>
+          <input type="url" id="itemURL" placeholder="https://">
+        </div>
+        <div>
+          <label for="itemCategory">Category</label>
+          <select id="itemCategory" required>
+            <option value="Work">Work</option>
+            <option value="Home">Home</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="itemNeed">Need Level</label>
+          <select id="itemNeed" required>
+            <option value="Essential">Essential</option>
+            <option value="Useful">Useful</option>
+            <option value="Nice">Nice-to-have</option>
+          </select>
+        </div>
+        <div>
+          <label for="itemPriority">Priority</label>
+          <select id="itemPriority" required>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+        <div>
+          <label for="itemPool">Budget Pool</label>
+          <select id="itemPool" required>
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        <button type="submit">Add to Wishlist</button>
+      </form>
+      <table class="wishlist-table" id="wishlistTable">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>$</th>
+            <th>Tags</th>
+            <th>Pool</th>
+            <th>Status</th>
+            <th>Tasks</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Wishlist items go here -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Overview Section -->
+    <section class="overview">
+      <h2>Overview & Progress</h2>
+      <table class="overview-table" id="overviewTable">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Budget Pool</th>
+            <th>Price</th>
+            <th>Pool Available</th>
+            <th>Task Status</th>
+            <th>Unlock Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Overview data -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+  <script>
+    // --- Storage Helpers ---
+    function saveData() {
+      localStorage.setItem('budgetPools', JSON.stringify(budgetPools));
+      localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    }
+    function loadData() {
+      try {
+        budgetPools = JSON.parse(localStorage.getItem('budgetPools')) || [];
+        wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+      } catch {
+        budgetPools = [];
+        wishlist = [];
+      }
+    }
+
+    // --- Data ---
+    let budgetPools = [];
+    let wishlist = [];
+    loadData();
+
+    // --- DOM Elements ---
+    const poolForm = document.getElementById('addBudgetPoolForm');
+    const poolNameInput = document.getElementById('poolName');
+    const poolAmountInput = document.getElementById('poolAmount');
+    const poolTableBody = document.querySelector('#budgetPoolsTable tbody');
+    const itemForm = document.getElementById('addWishlistItemForm');
+    const itemPoolSelect = document.getElementById('itemPool');
+    const wishlistTableBody = document.querySelector('#wishlistTable tbody');
+    const overviewTableBody = document.querySelector('#overviewTable tbody');
+
+    // --- Budget Pools ---
+    function renderBudgetPools() {
+      poolTableBody.innerHTML = '';
+      budgetPools.forEach(pool => {
+        const spent = getPoolSpent(pool.name);
+        const available = (pool.amount - spent).toFixed(2);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${pool.name}</td>
+          <td>$${pool.amount.toFixed(2)}
+            <div class="budget-bar-bg">
+              <div class="budget-bar" style="width:${Math.min(100, 100*pool.amount/(pool.amount+1))}%"></div>
+            </div>
+          </td>
+          <td>$${spent.toFixed(2)}</td>
+          <td>$${available}</td>
+          <td>
+            <button class="small-btn danger" onclick="deletePool('${pool.name}')">Delete</button>
+          </td>
+        `;
+        poolTableBody.appendChild(tr);
+      });
+      renderPoolOptions();
+    }
+    function renderPoolOptions() {
+      itemPoolSelect.innerHTML = budgetPools.length
+        ? budgetPools.map(
+            pool => `<option value="${pool.name}">${pool.name}</option>`
+          ).join('')
+        : `<option value="" disabled selected>No Pools</option>`;
+      if (!budgetPools.length) itemPoolSelect.disabled = true;
+      else itemPoolSelect.disabled = false;
+    }
+    poolForm.onsubmit = function(e) {
+      e.preventDefault();
+      const name = poolNameInput.value.trim();
+      const amt = parseFloat(poolAmountInput.value);
+      if (!name || isNaN(amt) || amt < 0) return;
+      const ix = budgetPools.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+      if (ix >= 0) budgetPools[ix].amount += amt;
+      else budgetPools.push({ name, amount: amt });
+      poolNameInput.value = '';
+      poolAmountInput.value = '';
+      saveData();
+      renderBudgetPools();
+      renderWishlist();
+      renderOverview();
+    }
+    window.deletePool = function(name) {
+      if (!confirm('Delete pool and all assignments?')) return;
+      budgetPools = budgetPools.filter(p => p.name !== name);
+      wishlist.forEach(item => { if (item.pool === name) item.pool = ''; });
+      saveData();
+      renderBudgetPools();
+      renderWishlist();
+      renderOverview();
+    }
+    function getPoolSpent(poolName) {
+      let spent = 0;
+      wishlist.forEach(item => {
+        if (item.pool === poolName && item.purchased) spent += item.price;
+      });
+      return spent;
+    }
+
+    // --- Wishlist ---
+    itemForm.onsubmit = function(e) {
+      e.preventDefault();
+      // Gather
+      const name = document.getElementById('itemName').value.trim();
+      const price = parseFloat(document.getElementById('itemPrice').value);
+      const url = document.getElementById('itemURL').value.trim();
+      const category = document.getElementById('itemCategory').value;
+      const need = document.getElementById('itemNeed').value;
+      const priority = document.getElementById('itemPriority').value;
+      const pool = document.getElementById('itemPool').value;
+      if (!name || isNaN(price) || price < 0 || !pool) return;
+      wishlist.push({
+        id: Date.now() + Math.random().toString(36),
+        name, price, url, category, need, priority,
+        pool, tasks: [], purchased: false
+      });
+      // Reset
+      itemForm.reset();
+      saveData();
+      renderWishlist();
+      renderOverview();
+    };
+    function renderWishlist() {
+      wishlistTableBody.innerHTML = '';
+      wishlist.forEach(item => {
+        const isUnlocked = allTasksComplete(item);
+        const poolObj = budgetPools.find(p => p.name === item.pool);
+        const poolAvail = poolObj ? (poolObj.amount - getPoolSpent(poolObj.name)).toFixed(2) : '0.00';
+        const isAffordable = poolObj && (item.price <= poolAvail);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <strong>${item.name}</strong>
+            ${item.url ? `<br><a href="${item.url}" target="_blank">Link</a>` : ''}
+          </td>
+          <td>$${item.price.toFixed(2)}</td>
+          <td>
+            <span class="tag category-${item.category.replace(/[^a-z]/ig,'')}">${item.category}</span>
+            <span class="tag need-${item.need.replace(/[^a-z]/ig,'')}">${item.need}</span>
+            <span class="tag priority-${item.priority}">${item.priority}</span>
+          </td>
+          <td>${item.pool}</td>
+          <td>
+            ${item.purchased
+              ? '<span class="affordable">Purchased</span>'
+              : isUnlocked
+                ? isAffordable
+                  ? '<span class="affordable">Ready</span>'
+                  : '<span class="unaffordable">Need $</span>'
+                : '<span class="locked">Locked</span>'}
+          </td>
+          <td>
+            ${renderTaskList(item)}
+            <button class="small-btn secondary" onclick="addTaskPrompt('${item.id}')">+Task</button>
+          </td>
+          <td>
+            <button class="small-btn" onclick="markPurchased('${item.id}')">Mark Purchased</button>
+            <button class="small-btn danger" onclick="deleteItem('${item.id}')">Delete</button>
+          </td>
+        `;
+        wishlistTableBody.appendChild(tr);
+      });
+    }
+    function renderTaskList(item) {
+      if (!item.tasks) item.tasks = [];
+      let html = `<ul class="task-list">`;
+      item.tasks.forEach((task, idx) => {
+        html += `<li>
+          <input type="checkbox" onchange="toggleTask('${item.id}',${idx})" ${task.done?'checked':''}>
+          <span class="${task.done?'task-complete':''}">${task.desc}</span>
+          <button class="small-btn danger" onclick="deleteTask('${item.id}',${idx})">&times;</button>
+        </li>`;
+      });
+      html += '</ul>';
+      return html;
+    }
+    window.addTaskPrompt = function(itemId) {
+      const desc = prompt('Describe prerequisite task:');
+      if (!desc) return;
+      const item = wishlist.find(it => it.id === itemId);
+      if (!item.tasks) item.tasks = [];
+      item.tasks.push({ desc, done: false });
+      saveData();
+      renderWishlist();
+      renderOverview();
+    }
+    window.toggleTask = function(itemId, idx) {
+      const item = wishlist.find(it => it.id === itemId);
+      item.tasks[idx].done = !item.tasks[idx].done;
+      saveData();
+      renderWishlist();
+      renderOverview();
+    }
+    window.deleteTask = function(itemId, idx) {
+      const item = wishlist.find(it => it.id === itemId);
+      item.tasks.splice(idx, 1);
+      saveData();
+      renderWishlist();
+      renderOverview();
+    }
+    window.deleteItem = function(itemId) {
+      if (!confirm('Delete this wishlist item?')) return;
+      wishlist = wishlist.filter(it => it.id !== itemId);
+      saveData();
+      renderWishlist();
+      renderOverview();
+    }
+    window.markPurchased = function(itemId) {
+      const item = wishlist.find(it => it.id === itemId);
+      if (!item) return;
+      if (!allTasksComplete(item)) {
+        alert('Complete all prerequisite tasks first!');
+        return;
+      }
+      const poolObj = budgetPools.find(p => p.name === item.pool);
+      if (!poolObj || (item.price > (poolObj.amount - getPoolSpent(poolObj.name)))) {
+        alert('Not enough funds in the budget pool!');
+        return;
+      }
+      if (!confirm('Mark item as purchased?')) return;
+      item.purchased = true;
+      saveData();
+      renderWishlist();
+      renderBudgetPools();
+      renderOverview();
+    }
+    function allTasksComplete(item) {
+      if (!item.tasks || !item.tasks.length) return true;
+      return item.tasks.every(t => t.done);
+    }
+
+    // --- Overview ---
+    function renderOverview() {
+      overviewTableBody.innerHTML = '';
+      wishlist.forEach(item => {
+        const poolObj = budgetPools.find(p => p.name === item.pool);
+        const spent = getPoolSpent(item.pool);
+        const avail = poolObj ? (poolObj.amount - spent + (item.purchased ? item.price : 0)).toFixed(2) : '0.00';
+        const isUnlocked = allTasksComplete(item);
+        const isAffordable = poolObj && (item.price <= avail);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.pool}</td>
+          <td>$${item.price.toFixed(2)}</td>
+          <td>$${avail}</td>
+          <td>
+            ${item.tasks && item.tasks.length
+              ? `${item.tasks.filter(t=>t.done).length}/${item.tasks.length} complete`
+              : 'No tasks'}
+          </td>
+          <td>
+            ${item.purchased
+              ? '<span class="affordable">Purchased</span>'
+              : isUnlocked
+                ? isAffordable
+                  ? '<span class="affordable">Ready</span>'
+                  : '<span class="unaffordable">Not enough budget</span>'
+                : '<span class="locked">Locked</span>'}
+          </td>
+        `;
+        overviewTableBody.appendChild(tr);
+      });
+    }
+
+    // --- Initial Render ---
+    renderBudgetPools();
+    renderWishlist();
+    renderOverview();
+  </script>
+</body>
+</html>
